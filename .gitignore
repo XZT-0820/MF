@@ -1,0 +1,22 @@
+﻿# IDE
+.idea/
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data & Models (large generated files)
+*.pkl
+*.parquet
+*.db
+
+# 保留配置文件
+!*.json
+
+# Logs
+*.log
