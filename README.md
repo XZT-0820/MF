@@ -27,6 +27,7 @@ vnpy框架回测:`C:\veighna_studio\Lib\site-packages\vnpy`;  未进展到拟真
                                                  因子格式统一:pl.DataFrame with columns: [vt_symbol, date, data];
                                                  FACTOR_REGISTRY存储因子对应的函数, PARAMS_REGISTRY存储因子函数参数;
                                                  将文件移至`C:\veighna_studio\Lib\site-packages\vnpy\alpha\factor_define.py`, 之后导入的是该路径下的模块, 原路径的factor_define只是用来更新, 每次更新后记住要复制过去;
+                                                 将文件移至`C:\veighna_studio\Lib\site-packages\vnpy\factor_define.py`, 放在alpha里会有循环导入的bug, 之后导入的是该路径下的模块, 原路径的factor_define只是用来更新, 每次更新后记住要复制过去;
 更新:{
 不需要min_periods, 将各个因子定义内的window_size视为形参处理, 并且增加形参 max_window, max_window在填入实参时填的是所有的window_size之间的最大值，这样保证在因子计算函数里加载除指定时间段的k线外还加载extended_days = max_window的k线，k线表有足够数据可以滚动, 最后返回的是将多余的数据截断的dataframe, 所以还需要形参start, 只保留start后的数据;
 增加参数注册字典: PARAMS_REGISTRY1, PARAMS_REGISTRY2, PARAMS_REGISTRY3, 分别对应因子注册表, 存入函数参数, 例如: func(df, start, window1, window2) 则存入: {name: {"window1" = 21, "window2" = 5, "max_window" = 21}};
