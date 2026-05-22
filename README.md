@@ -193,10 +193,15 @@
 
 ### 2.3 数据库:
             D:\Aquant project\MF\MF_lab
-            ├── `component`
-            │   └── 000300.`SSE`
+            ├── component
+            │   └── 000300.SSE
             ├── dataset
-            │   └── v5.pkl
+            │   ├── v100
+            │   │     ├── infer.parquet
+            │   │     ├── learn.parquet
+            │   │     ├── meta.json
+            │   │     ├── raw.parquet
+            │   │     └── result.parquet
             ├── factor
             │   ├── Price and Volume
             │   │   └── late_skew_ret.parquet
