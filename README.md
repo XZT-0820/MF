@@ -1,7 +1,9 @@
 > Agent：先深入读取与当前任务相关的文件，在读取过程中若出现与该文件紧密相关的其他文件，则加入读取过程，以此反复交互前进，直至了解、通透任务至项目。
-
+---
 # 量化项目`D:\Aquant project\MF`
 > 基于 veighna_studio 4.3.0 
+
+
 
 ## 1. 项目概要、目标:
 
@@ -12,6 +14,8 @@
 - vnpy框架回测:`C:\veighna_studio\Lib\site-packages\vnpy`;  未进展到拟真与实盘...
 - 数据接口为vnpy_rqdata:`C:\veighna_studio\Lib\site-packages\vnpy_rqdata`
 
+---
+
 ## 2. 项目进展:
 
 ### 2.1 主代码库: `D:\Aquant project\MF\MF_code`
@@ -20,12 +24,16 @@
   - 沪深300指数成分股分线、日线数据下载模板
   - 更新：
     - `extended_days`必须;
+    
+---
 
 - `D:\Aquant project\MF\MF_code\download_industry.ipynb`
   - 下载行业数据
+---
 
 - `D:\Aquant project\MF\MF_code\download_all.ipynb`
   - 用米筐全A市场加权指数`"866011.RI"`下载A股全市场股票
+---
 
 - `D:\Aquant project\MF\MF_code\factor_define.py`
   - 因子定义: 接受数据表 计算返回因子表 接受的数据表是何种数据,涵盖哪些股票, 哪些交易日在函数外确定, 函数只负责接收表格
@@ -54,6 +62,7 @@
       `PARAMS_REGISTRY = { factor_name:{"constant_params":{},"df_params":{"df_daily":{} } } }` 也就是将其与作用于表的区别成constant和df就可以了. 
       为了方便填写参数,在因子定义时,各个表和其对应的参数放一起,例如: `func(df_daily,window,df_minute,window_m.... constant_params, start = None)`, `start`放在最后.据此, 需要修改`factor_define`和`lab.cal_factor_daliy`;
     - 在因子注册表里添加因子类型`FactorType`;
+---
 
 - `D:\Aquant project\MF\MF_code\calculate_factor.ipynb`
   - 因子计算，切分时间段分批计算, 因为计算因子时加载300只股票, 6年的分线内存占用直接爆满. 日频的不会, 日频只增加了0.2G, 那如果5000只, 10年, 日频要增加5.5G;
@@ -66,23 +75,28 @@
     - 将因子计算函数调到`lab`里;
     - 将按月分区的逻辑打包成函数放到`lab`里;
     - 2026-05-22: `logger`替代`print`, 使用`FactorRequest->cal_factor_daliy->save_factor`, 按月分批计算;
+---
 
 - `D:\Aquant project\MF\MF_code\data_prepare.ipynb`
   - 数据准备，将数据整合到`dataset`里后存储
   - 更新：
     - 将加载因子的函数和计算缺失率的函数移到`lab.py`里;
     - 2026-05-22: 使用新架构, `FactorRequest`加载因子, `add_lag_features`生成滞后, `prepare_data`后释放中间状态,` Parquet+JSON`保存;
+---
 
 - `D:\Aquant project\MF\MF_code\model_train - rank.ipynb`
   - `Lightgbm`模型训练，`objective:rank`，预测排名
   - 使用`C:\veighna_studio\Lib\site-packages\lightgbm`
+---
 
 - `D:\Aquant project\MF\MF_code\model_train.ipynb`
   - `Lightgbm`模型训练，`objective:regression`
+---
 
 - `D:\Aquant project\MF\MF_code\backtest.ipynb`
   - 回测；
   - 策略采用`C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py`
+---
 
 ### 2.2 引用代码库: `C:\veighna_studio\Lib\site-packages\vnpy`  `C:\veighna_studio\Lib\site-packages\vnpy_rqdata`
 
@@ -100,12 +114,14 @@
     - `self.short_trade_count`: 新增卖出次数统计;
     - `calculate_max_volume`: 新增函数，计算订单最大可交易volume;
     - `self.adjust_type`: 新增adjust_type;
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py`
   - 新增回测策略 strategy;
   - 收盘计算信号，明日开盘执行交易;
   - 更新：
     - `self._buy_symbols`: 新增买单顺序, 供`cross_order`使用;
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\lab.py`
   - 数据存储、加载、过滤等;  一个完整的数据获取,保存,加载,使用 流程: `rqdata_datafeed`下载数据(或许在`object`里定义新的数据类型和数据`req`),` lab`接收数据然后保存, 并且有加载的接口,在calcu时调用加载函数加载数据;
@@ -143,6 +159,7 @@
       有什么参数。另外，cal_industry_feature还需要 feature_name参数，这样才知道计算哪个特征，加载哪些表等等，这些都应该记录在参数表里。而且，这意味着每当定义的因子函数需要一个
       新的表时，都需要在C:\veighna_studio\Lib\site-packages\vnpy_rqdata\rqdata_datafeed.py里写一个获取这个数据的新的接口，再在lab里写一个保存和加载的函数。 总之,这个行业函数 返回 pl.datafram "`datetime`","`code`", "`data`"
       所以还需要保存和加载的函数 将行业特征保存到D:\Aquant project\MF\MF_lab\industry\cn\citics_2019\feature\momentum_5d.parquet 可以不按月分区。
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy_rqdata\rqdata_datafeed.py`
   - 数据获取接口,目前可获取k线 `query_bar_history`;
@@ -153,6 +170,7 @@
     - 在`_query_bar_history`里新增可以查询"`RI`"后缀的指数;
     - 修改`to_rq_symbol`,兼容`'VTRI'`的转换;
     - `query_factor`: 新增函数, 获取`rqdata`的股票因子, 一次只请求一个因子;
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\trader\object.py`
   - 定义数据类型;
@@ -166,6 +184,7 @@
     - `FactorRequest`: 新增因子请求, 调用`rq.get_factor()`;
     - `FactorData`: 新增因子类;
     - 修改`FactorRequest`: 区分请求`rqdat`a还是`factor_define`;
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\trader\constant.py`
   - 定义交易常数;
@@ -173,23 +192,29 @@
     - `Interval`: 添加`WEEKLY`,`MONTHLY`;
     - `Exchange`: 添加`'VTRI'`;
     - `FactorType`: 新增因子类型;
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\dataset\template.py`
   - 合并训练数据、准备数据、处理数据;
   - 更新：
     - `prepare_data`: 修改, 加入的特征dataframe中的因子列名不必要是`"data"`, 可以是因子名;
     - 2026-05-22: `raw_df`/`infer_df`/`learn_df`/`result_df` 改为`@property`懒加载, `prepare_data`后释放`self.df`和`feature_results`降低内存峰值, 新增`add_lag_features()`向量化滞后特征方法;
+    - 2026-05-23: 新增extract_lambdarank_data函数, 对数据集的label按等级分类, 即对每天的股票进行收益率评级;
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\__init__.py`
   - 更新：
     - 将`BacktestingEngine2`加入初始化; 
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\template.py`
   - 更新：
     - `update_order2`: 新增函数，部分成交不算活跃;
+---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\factor_define.py`
   - 见主代码库
+---
 
 ### 2.3 数据库:
             D:\Aquant project\MF\MF_lab
@@ -296,6 +321,7 @@
 
 - `D:\Aquant project\MF\MF_lab\industry`
   - 存储行业分类及特征
+---
 
 - 使用`lab.load_bar_df()`加载的数据类型
   - `pl.dataframe columns: ['datetime', 'vt_symbol', 'open', 'close' , 'high', 'low' , 'volume', 'turnover', 'open_interest', 'vwap']`
