@@ -5,12 +5,21 @@
 
 
 
-## 1. 项目概要、目标:
+## 1. 项目概要:
 
-- 因子库多维度、多跨度、多节点;
-- 行业、市值作为因子加入到特征中;
-- 策略采用周频或日频调仓，股票池沪深300，因子计算以分线、日线、财务等为元数据;
-- 采用机器学习、深度学习方法优化因子权重，捕捉市场信号;
+- 特征 = 因子字段 + 因子中性化字段 + 市场风格字段
+  - 因子字段 = 基本面因子 + 价量因子 等股票风格因子 多维度、多跨度、多节点
+  - 因子中性化字段 = 行业 + 市值
+  - 市场风格字段 = 牛熊 + 行业轮动
+- 因子字段不能是原始数据字段，需要包含原始数据间的关系
+- 模型学习的是高阶关系，需要挖掘特征间的非线性交互、条件依赖和时序演化模式，捕捉市场信号
+  - XGBoost/LightGBM
+  - Transformer
+  - CNN
+  - GNN
+  - 全连接网络
+  - RL DQN
+- 策略采用周频或日频调仓，股票池沪深300
 - vnpy框架回测:`C:\veighna_studio\Lib\site-packages\vnpy`;  未进展到拟真与实盘...
 - 数据接口为vnpy_rqdata:`C:\veighna_studio\Lib\site-packages\vnpy_rqdata`
 
@@ -91,6 +100,7 @@
 
 - `D:\Aquant project\MF\MF_code\model_train.ipynb`
   - `Lightgbm`模型训练，`objective:regression`
+  - 不用看这个代码，现在不用它训练，用model_train - rank
 ---
 
 - `D:\Aquant project\MF\MF_code\backtest.ipynb`
@@ -151,14 +161,7 @@
     - 2026-05-22: `save_dataset`/`load_dataset`/`remove_dataset` 重构为` Parquet+JSON` 目录格式, 适配重构的`Alphadataset`, 不再全部一次性加载, 用什么加载什么;
     - `save_dataset`/`load_dataset`/`remove_dataset`: 2026-05-22 重构为 `Parquet+JSON` 目录格式, 消除`pickle`内存峰值, 支持懒加载, 兼容旧`.pkl`;
     - `list_all_datasets`: 兼容新旧格式;
-    - 需要一个计算行业特征的函数:lab.cal_industry_feature(self, `start`: `datetime` | `date`, `end`:`datetime` | `date`, `source`:`str`, `market`: `str`, `code`: `str`)
-      比如 cal_industry_feature(`datetime`(2018,1,5), `datetime`(2018,1,10), "citics_2019", "cn","60") 函数会去D:\Aquant project\MF\MF_lab\industry\cn\citics_2019\`component`
-      查找在start-end之间的目录，比如2018，1，5 根据对后缀的筛选找到D:\Aquant project\MF\MF_lab\industry\cn\citics_2019\`component`\2018-01-05\电子-60
-      加载里面的60.json文件,这是该行业成分股列表，然后加载这个股票池的k线（可能要包含extended）那么什么特征呢，比如行业5日动量，就是该行业成分股5日收益率市值加权平均, 那么需要新的因子定义了，或许可以在`factor_define`里
-      设定一个注册表，专门记录行业因子，比如这个5日动量， momentum(df, `start`)，参数也不一定是只有k线df，这里还需要市值数据，那就得再接受一个marketcap数据，这意味着加载该股票池的什么数据需要看该因子函数
-      有什么参数。另外，cal_industry_feature还需要 feature_name参数，这样才知道计算哪个特征，加载哪些表等等，这些都应该记录在参数表里。而且，这意味着每当定义的因子函数需要一个
-      新的表时，都需要在C:\veighna_studio\Lib\site-packages\vnpy_rqdata\rqdata_datafeed.py里写一个获取这个数据的新的接口，再在lab里写一个保存和加载的函数。 总之,这个行业函数 返回 pl.datafram "`datetime`","`code`", "`data`"
-      所以还需要保存和加载的函数 将行业特征保存到D:\Aquant project\MF\MF_lab\industry\cn\citics_2019\feature\momentum_5d.parquet 可以不按月分区。
+    
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy_rqdata\rqdata_datafeed.py`
@@ -331,3 +334,7 @@
 
 - 每日需要下载的数据
   - 交易日, 股票池和benchmark的k线, contract_setting, 行业数据, rqdata获取的因子, factor_define计算的因子,
+
+
+
+
