@@ -131,6 +131,8 @@
   - 收盘计算信号，明日开盘执行交易;
   - 更新：
     - `self._buy_symbols`: 新增买单顺序, 供`cross_order`使用;
+  - 2026-05-25: 当前的策略用无复权k线做回测会导致实际持仓数超过top_k, 因为除权时的跳空引擎会判断成跌停，不会卖出，这导致卖的股票数少于计划，
+    而买入资金是平均分配，剩余资金少了，搭配买入最多能买入量机制的存在，买的股票数不变，于是持仓数增加，如果不控制`buy_quantity`, 就会慢慢计算成负数;
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\lab.py`
@@ -158,10 +160,8 @@
     - 移除`save_factor_by_month`, `load_factor_from_month`, 不再按月分区, 只是分批计算, 单个因子用一个`parquet`文件保存;
     - `load_factor`: 新增函数, 从`parquet`文件中加载因子;
     - 修改`missing_ratio`: 适配新的`load_factor`;
-    - 2026-05-22: `save_dataset`/`load_dataset`/`remove_dataset` 重构为` Parquet+JSON` 目录格式, 适配重构的`Alphadataset`, 不再全部一次性加载, 用什么加载什么;
-    - `save_dataset`/`load_dataset`/`remove_dataset`: 2026-05-22 重构为 `Parquet+JSON` 目录格式, 消除`pickle`内存峰值, 支持懒加载, 兼容旧`.pkl`;
-    - `list_all_datasets`: 兼容新旧格式;
-    
+    - 2026-05-22: `save_dataset`/`load_dataset`/`remove_dataset` 重构为` Parquet+JSON` 目录格式, 适配重构的`Alphadataset`, 消除`pickle`内存峰值, 支持懒加载, 兼容旧`.pkl`, 不再全部一次性加载, 用什么加载什么;
+    - 2026-05-25: 修改`save_signal`, `load_signal`函数, 信号分为样本内和样本外信号, 样本内观察模型是否学到了关系, 样本外观察关系能否延续;
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy_rqdata\rqdata_datafeed.py`
@@ -266,7 +266,12 @@
             ├── model
             │   └── v7.pkl
             ├── signal
-            │   └── v7.parquet
+            │   └── v100
+            │        ├── v100_ALL.parquet
+            │        ├── v100_IS.parquet
+            │        ├── v100_OS.parquet
+            │        ├── v100_TV.parquet
+            │        └── v100_VA.parquet
             ├── contract.json
             ├── trading_calendar.pkl
             └── trading_days.json
