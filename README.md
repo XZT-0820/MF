@@ -94,8 +94,9 @@
 ---
 
 - `D:\Aquant project\MF\MF_code\model_train - rank.ipynb`
-  - `Lightgbm`模型训练，`objective:rank`，预测排名
+  - `Lightgbm`模型训练，`objective:rank`，lambda rank预测排名
   - 使用`C:\veighna_studio\Lib\site-packages\lightgbm`
+  - 2026-05-26: 奇怪的现象：以验证集NDCG为评估指标，一个最佳迭代(第8轮)和一个特意选择的指标没那么好的迭代(第3轮)（无论训练集、验证集还是测试集，3的NDCG都显著低于8，3样本内回测结果明显低于8，却在验证集和测试集上的回测明显优于8;
 ---
 
 - `D:\Aquant project\MF\MF_code\model_train.ipynb`
@@ -107,6 +108,44 @@
   - 回测；
   - 策略采用`C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py`
 ---
+
+- `D:\Aquant project\MF\MF_code\backtest_WFO.ipynb`
+  - 2026-05-27: 新增滚动回测, 打包`model_train-rank.ipynb`和`backtest.ipynb`
+  
+  -
+    ```
+    WFO 旨在减少过拟合风险，通过模拟策略（模型策略、选股策略和回测策略）在历史数据上的动态适应过程来评估策略超参数效果。
+    在当前框架下，策略包含：
+    - 模型策略：使用什么模型，决定什么超参数 当前是lightgbm D:\Aquant project\MF\MF_code\model_train - rank.ipynb
+    - 选股、挂单策略：C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py，得到信号后如何买入和卖出，买多少，卖多少
+    - 回测策略：C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\backtesting2.py 如何更贴合实际交易，如何撮合交易等等
+    参数包含：
+    - 数据集切分参数：lambda-rank的n_quantiles
+    - 模型超参数：如lightgbm的'num_leaves': 1024,'max_depth': -1,'min_data_in_leaf': 300等
+    - 模型内参数
+    - 选股策略超参数：如top_k，min_days
+    - 回测策略参数：capital等
+    
+    固定下所有参数后，模型在训练集上训练，验证集上评估，选取最优模型内参数，在测试集上计算出信号，发送给选股策略，给出买单和卖单，回测策略撮合交易，执行回测，计算出指标
+    这一轮流程下来可以知道该模型超参数下的model在测试时间段的选股效果如何，但是金融市场信噪比太低，过去不代表未来，至于模型实盘怎么样就不敢保证了，
+    所以如何有信心让模型应用到实盘呢？ 必须用到滚动回测，只有将固定下超参数的模型放在多个时间段内检验才可以知道模型是否稳健。
+    以18-26年为例，以3年训练，1年验证，1年测试，1年滚动，那么会有如下5个窗口：
+            训练集         |        验证集          |        测试集
+    2018-1-1 ---- 2021-1-1  2021-1-1 ---- 2022-1-1  2022-1-1 ---- 2023-1-1
+    2019-1-1 ---- 2022-1-1  2022-1-1 ---- 2023-1-1  2023-1-1 ---- 2024-1-1
+    2020-1-1 ---- 2023-1-1  2023-1-1 ---- 2024-1-1  2024-1-1 ---- 2025-1-1
+    2021-1-1 ---- 2024-1-1  2024-1-1 ---- 2025-1-1  2025-1-1 ---- 2026-1-1
+    2022-1-1 ---- 2025-1-1  2025-1-1 ---- 2026-1-1  2026-1-1 ---- 2026-5-8
+    固定好模型的超参数后，让模型在每个窗口上训练、验证，得到最优参数下的模型并计算信号，将5个窗口的测试集拼接起来，让策略在这个连贯的测试数据上运行一次，
+    但根据数据所在的时间组动态切换参数，也就是将信号拼接起来，这次完整回测得到的绩效指标（如收益率、夏普比率、最大回撤等），即作为该超参数下策略效果的最终评价依据。
+    在滚动回测的基础上进行optuna超参数调优，调的是模型超参数，其余参数或超参数固定。
+    ```
+
+
+
+
+
+
 
 ### 2.2 引用代码库: `C:\veighna_studio\Lib\site-packages\vnpy`  `C:\veighna_studio\Lib\site-packages\vnpy_rqdata`
 
@@ -218,6 +257,21 @@
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\factor_define.py`
   - 见主代码库
 ---
+- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\walkforward`
+  - 2026-5-27：新增滚动回测模块
+---
+- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\walkforward\window.py`
+  - 滚动回测窗口类`WalkForwardWindow`, 训练集+验证集+测试集算作一个窗口
+---
+
+- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\walkforward\runner.py`
+  - `WalkForwardRunner`: 滚动回测运行器
+  - `LGBMLR_Runner`: 继承自`WalkForwardRunner`的LightGBM LambdaRank 滚动回测运行器
+
+---
+
+- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\walkforward\optuna_wrapper.py`
+  - 对滚动回测进行模型超参数优化
 
 ### 2.3 数据库:
             D:\Aquant project\MF\MF_lab
@@ -264,14 +318,22 @@
             │   ├── weekly_post
             │   └── weekly_pre
             ├── model
-            │   └── v7.pkl
+            │   ├── v7.pkl
+            │   └── walkforward
+            │       └── lgb_baseline
+            │           ├── 0.pkl
+            │           └── 1.pkl
             ├── signal
-            │   └── v100
-            │        ├── v100_ALL.parquet
-            │        ├── v100_IS.parquet
-            │        ├── v100_OS.parquet
-            │        ├── v100_TV.parquet
-            │        └── v100_VA.parquet
+            │   ├── v100
+            │   │    ├── v100_ALL.parquet
+            │   │    ├── v100_IS.parquet
+            │   │    ├── v100_OS.parquet
+            │   │    ├── v100_TV.parquet
+            │   │    └── v100_VA.parquet
+            │   └── walkforward
+            │       └── lgb_baseline
+            │           ├── 0.parquet
+            │           └── all.parquet
             ├── contract.json
             ├── trading_calendar.pkl
             └── trading_days.json
@@ -314,9 +376,11 @@
 
 - `D:\Aquant project\MF\MF_lab\model`
   - 模型 `.pkl`
+  - `\walkforward` 滚动回测的模型
 
 - `D:\Aquant project\MF\MF_lab\signal`
   - 信号 `.parquet`
+  - `\walkforward` 滚动回测的信号
 
 - `D:\Aquant project\MF\MF_lab\contract.json`
   - 合约设置
