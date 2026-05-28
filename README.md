@@ -141,6 +141,11 @@
     在滚动回测的基础上进行optuna超参数调优，调的是模型超参数，其余参数或超参数固定。
     ```
 
+---
+- `D:\Aquant project\MF\MF_code\Optuna_LGBMLR.ipynb`
+  - 2026-05-28新增对LightGBM LambdaRank用`optuna`优化
+
+---
 
 
 
@@ -270,8 +275,6 @@
 
 ---
 
-- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\walkforward\optuna_wrapper.py`
-  - 对滚动回测进行模型超参数优化
 
 ### 2.3 数据库:
             D:\Aquant project\MF\MF_lab
