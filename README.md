@@ -156,6 +156,7 @@
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\backtesting2.py`
   - 新增回测引擎;
+  - `backtesting.py` 是模拟交易所和我向交易所执行的动作, 与选股策略模块耦合，最重要的是new_bars(), 这是每天用户执行交易的动作, 内部的的on_bars()执行选股及各种交易操作, 而交易操作又是引擎里的;
   - 关键函数调用:`run_backtesting(self)` -> `self.new_bars(dt)` -> `self.cross_order() -> process_order(self, order: OrderData)` -
     -> `self.strategy.on_bars(bars)` -
     -> `class EquityDemoStrategy2(AlphaStrategy): self.execute_trading(bars, price_add=self.price_add)` -
@@ -171,7 +172,8 @@
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py`
-  - 新增回测策略 strategy;
+  - 新增选股策略 strategy;
+  - 此策略是通过信号计算出目标持仓， 该模块与回测引擎模块耦合;
   - 收盘计算信号，明日开盘执行交易;
   - 更新：
     - `self._buy_symbols`: 新增买单顺序, 供`cross_order`使用;
@@ -206,6 +208,7 @@
     - 修改`missing_ratio`: 适配新的`load_factor`;
     - 2026-05-22: `save_dataset`/`load_dataset`/`remove_dataset` 重构为` Parquet+JSON` 目录格式, 适配重构的`Alphadataset`, 消除`pickle`内存峰值, 支持懒加载, 兼容旧`.pkl`, 不再全部一次性加载, 用什么加载什么;
     - 2026-05-25: 修改`save_signal`, `load_signal`函数, 信号分为样本内和样本外信号, 样本内观察模型是否学到了关系, 样本外观察关系能否延续;
+    - 2026-06-12: 修改`load_bar_df`, 添加`skip_suspended`参数, `False`保留停牌日数据, `True`除去停牌日数据, `rqdata`返回的停牌数据使用前向填充, `volume` = 0;
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy_rqdata\rqdata_datafeed.py`
