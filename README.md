@@ -106,7 +106,7 @@
 
 - `D:\Aquant project\MF\MF_code\backtest.ipynb`
   - 回测；
-  - 策略采用`C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py`
+  - 策略采用`C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy3.py`
 ---
 
 - `D:\Aquant project\MF\MF_code\backtest_WFO.ipynb`
@@ -171,6 +171,21 @@
     - `self.adjust_type`: 新增adjust_type;
 ---
 
+- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\backtesting3.py`
+  - 基于`backtesting2.py`重构的新回测引擎, 新增同日撮合与信号逐日获取;
+  - 关键调用:`new_bars(dt)` -> `strategy.on_bars(bars)` -> `cross_order()`(同日撮合) -> `cancel_all()`(清理未成交) -> `sync_targets()`(镜像target) -> `update_daily_close()`;
+    `cross_order()`-> `process_order()`: 先执行卖单, 再按`buy_symbols`信号顺序逐个执行买单, 资金不足自动缩量;
+    `get_previous_signal()`: 获取`< self.datetime`的最新一期信号, 天然跨周末/节假日;
+  - 更新：
+    - `new_bars`: 去掉前置`cross_order()`(不再撮合昨日遗留订单), `on_bars`后追加`cross_order`+`cancel_all`+`sync_targets`;
+    - `send_order`: 修复`size`未定义bug, 恢复`LONG`委托资金检查;
+    - `process_order`: 成交价直接使用`open*(1±slippage)`, 不再`min/max(order_price, slippage_price)`;
+    - `get_previous_signal`: 新增函数, 从`signal_df`中取`<self.datetime`的最新日期信号;
+    - `holding_value`: `PortfolioDailyResult`新增日末持仓市值, `calculate_statistics`输出日均资金利用率;
+    - `calmar_ratio`: 新增Calmar Ratio = 年化收益 / |最大回撤|;
+    - `sortino_ratio`: 新增Sortino Ratio, 以下行标准差替代总标准差;
+---
+
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py`
   - 新增选股策略 strategy;
   - 此策略是通过信号计算出目标持仓， 该模块与回测引擎模块耦合;
@@ -179,6 +194,17 @@
     - `self._buy_symbols`: 新增买单顺序, 供`cross_order`使用;
   - 2026-05-25: 当前的策略用无复权k线做回测会导致实际持仓数超过top_k, 因为除权时的跳空引擎会判断成跌停，不会卖出，这导致卖的股票数少于计划，
     而买入资金是平均分配，剩余资金少了，搭配买入最多能买入量机制的存在，买的股票数不变，于是持仓数增加，如果不控制`buy_quantity`, 就会慢慢计算成负数;
+---
+
+- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy3.py`
+  - 基于`equity_demo_strategy2.py`重构的选股策略, 信号加权TopK分配, open_price定价;
+  - 选股逻辑: `get_previous_signal()`获取昨日收盘信号 → 排序取TopK → `total_assets*cash_ratio`按信号权重分配 → `floor_to(目标价值/open, min_volume)`定股数;
+  - 不在TopK的持仓`set_target=0`(全部卖出), 停牌股(`open_price==0 or volume==0`)跳过;
+  - 交易执行: `execute_trading_open()`三阶段 — Phase1全卖→Phase2撮合卖→Phase3按信号顺序逐个买(资金不够则`calc_affordable_buy`重算再下);
+  - 更新：
+    - `on_bars`: 完全重写, 移除`holding_days`/`min_days`等旧逻辑, 移除`collections.defaultdict`/`Direction`/`round_to`等未使用import;
+    - `on_init`: 移除`holding_days`初始化;
+    - `on_trade`: 简化为空实现;
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\lab.py`
@@ -260,6 +286,13 @@
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\template.py`
   - 更新：
     - `update_order2`: 新增函数，部分成交不算活跃;
+---
+
+- `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\template3.py`
+  - 基于`template.py`增强的策略模板类;
+  - `execute_trading_open`: 三阶段执行(全卖→撮合卖→逐个买), 基于`open_price`定价, 用`process_order`单笔撮合;
+  - `calc_affordable_buy`: 用户/券商用接口, 计算当前资金下最大可买股数(考虑佣金+`min_volume`);
+  - `sync_targets`: 日末`target_data`同步到`pos_data`, 防止过期target延续至下一日;
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\factor_define.py`
@@ -409,6 +442,14 @@
 
 - 每日需要下载的数据
   - 交易日, 股票池和benchmark的k线, contract_setting, 行业数据, rqdata获取的因子, factor_define计算的因子,
+
+
+
+
+
+
+---
+#### version: 2026-06-14
 
 
 
