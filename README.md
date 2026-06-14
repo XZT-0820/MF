@@ -184,6 +184,7 @@
     - `holding_value`: `PortfolioDailyResult`新增日末持仓市值, `calculate_statistics`输出日均资金利用率;
     - `calmar_ratio`: 新增Calmar Ratio = 年化收益 / |最大回撤|;
     - `sortino_ratio`: 新增Sortino Ratio, 以下行标准差替代总标准差;
+    - `print_trading_log`: 新增函数, 按日分组打印委托/成交明细, 卖出显示成本基准与涨跌百分比;
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy2.py`
@@ -197,14 +198,15 @@
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\strategy\strategies\equity_demo_strategy3.py`
-  - 基于`equity_demo_strategy2.py`重构的选股策略, 信号加权TopK分配, open_price定价;
-  - 选股逻辑: `get_previous_signal()`获取昨日收盘信号 → 排序取TopK → `total_assets*cash_ratio`按信号权重分配 → `floor_to(目标价值/open, min_volume)`定股数;
+  - 基于`equity_demo_strategy2.py`重构的选股策略, 信号加权TopK分配, open_price定价, holding_days锁仓;
+  - 选股逻辑: `get_previous_signal()`获取昨日收盘信号 → 排序取TopK → 锁定持仓(held且∉TopK且days<min_days不卖) → `available_slots = top_k - len(locked)`保证≤top_k → 仅正信号参与资金分配;
   - 不在TopK的持仓`set_target=0`(全部卖出), 停牌股(`open_price==0 or volume==0`)跳过;
   - 交易执行: `execute_trading_open()`三阶段 — Phase1全卖→Phase2撮合卖→Phase3按信号顺序逐个买(资金不够则`calc_affordable_buy`重算再下);
+  - 成本追踪: `cost_basis`买入加权平均, 卖出`sell_cost`快照留存;
   - 更新：
-    - `on_bars`: 完全重写, 移除`holding_days`/`min_days`等旧逻辑, 移除`collections.defaultdict`/`Direction`/`round_to`等未使用import;
-    - `on_init`: 移除`holding_days`初始化;
-    - `on_trade`: 简化为空实现;
+    - `on_bars`: 完全重写, 新增`holding_days`锁仓机制(持仓<min_days不卖), `available_slots`保证持仓数≤top_k, 仅正信号参与资金分配;
+    - `on_init`: 初始化`holding_days`/`cost_basis`/`sell_cost`;
+    - `on_trade`: 卖出快照`cost_basis`+清仓归零, 买入更新加权平均成本;
 ---
 
 - `C:\veighna_studio\Lib\site-packages\vnpy\alpha\lab.py`
